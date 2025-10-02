@@ -21,7 +21,7 @@
  
 
 #ifndef NRFX_SPIMX2_ENABLED
-#define NRFX_SPIMX2_ENABLED 1
+#define NRFX_SPIMX2_ENABLED 0
 #endif
 
 // <q> NRFX_SPIMX3_ENABLED  - Enable SPIMX3 instance
@@ -45,7 +45,22 @@
 // <3=> NRF_GPIO_PIN_PULLUP 
 
 #ifndef NRFX_SPIMX_MISO_PULL_CFG
-#define NRFX_SPIMX_MISO_PULL_CFG 1
+#define NRFX_SPIMX_MISO_PULL_CFG NRF_GPIO_PIN_PULLDOWN
+#endif
+
+// <o> NRFX_SPIMX_PIN_DRIVE_CFG - SCK,MOSI,MISO,SS pin drive configuration.
+
+// <0=> NRF_GPIO_PIN_S0S1  - Standard '0', standard '1'.
+// <1=> NRF_GPIO_PIN_H0S1  - High-drive '0', standard '1'.
+// <2=> NRF_GPIO_PIN_S0H1  - Standard '0', high-drive '1'.
+// <3=> NRF_GPIO_PIN_H0H1  - High drive '0', high-drive '1'.
+// <4=> NRF_GPIO_PIN_D0S1  - Disconnect '0' standard '1'.
+// <5=> NRF_GPIO_PIN_D0H1  - Disconnect '0', high-drive '1'.
+// <6=> NRF_GPIO_PIN_S0D1  - Standard '0', disconnect '1'.
+// <7=> NRF_GPIO_PIN_H0D1  - High-drive '0', disconnect '1'.
+
+#ifndef NRFX_SPIMX_PIN_DRIVE_CFG
+#define NRFX_SPIMX_PIN_DRIVE_CFG NRF_GPIO_PIN_H0H1
 #endif
 
 // <o> NRFX_SPIMX_DEFAULT_CONFIG_IRQ_PRIORITY  - Interrupt priority

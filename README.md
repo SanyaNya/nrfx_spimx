@@ -11,5 +11,4 @@ Reimplementation of nrf5-sdk nrfx_spim with extra features.
  * prs support
  * xfer flags
  * debug logs
- * pin drive configuration
  * multiple slave support

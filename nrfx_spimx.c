@@ -151,7 +151,7 @@ __STATIC_INLINE void set_momi_cfg_out(uint8_t momi_pin)
     NRF_GPIO_PIN_DIR_OUTPUT,
     NRF_GPIO_PIN_INPUT_DISCONNECT,
     NRF_GPIO_PIN_NOPULL,
-    NRF_GPIO_PIN_H0H1,
+    NRFX_SPIMX_PIN_DRIVE_CFG,
     NRF_GPIO_PIN_NOSENSE);
 }
 
@@ -160,8 +160,8 @@ __STATIC_INLINE void set_momi_cfg_in(uint8_t momi_pin)
   nrf_gpio_cfg(momi_pin,
     NRF_GPIO_PIN_DIR_INPUT,
     NRF_GPIO_PIN_INPUT_DISCONNECT,
-    (nrf_gpio_pin_pull_t)NRFX_SPIMX_MISO_PULL_CFG,
-    NRF_GPIO_PIN_H0H1,
+    NRFX_SPIMX_MISO_PULL_CFG,
+    NRFX_SPIMX_PIN_DRIVE_CFG,
     NRF_GPIO_PIN_NOSENSE);
 }
 
@@ -249,7 +249,7 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
     NRF_GPIO_PIN_DIR_OUTPUT,
     NRF_GPIO_PIN_INPUT_CONNECT,
     NRF_GPIO_PIN_NOPULL,
-    NRF_GPIO_PIN_H0H1,
+    NRFX_SPIMX_PIN_DRIVE_CFG,
     NRF_GPIO_PIN_NOSENSE);
   
   // Configure MOSI pin
@@ -260,7 +260,7 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
       NRF_GPIO_PIN_DIR_OUTPUT,
       NRF_GPIO_PIN_INPUT_DISCONNECT,
       NRF_GPIO_PIN_NOPULL,
-      NRF_GPIO_PIN_H0H1,
+      NRFX_SPIMX_PIN_DRIVE_CFG,
       NRF_GPIO_PIN_NOSENSE);
   }
 
@@ -270,8 +270,8 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
     nrf_gpio_cfg(p_conf->miso_pin,
       NRF_GPIO_PIN_DIR_INPUT,
       NRF_GPIO_PIN_INPUT_DISCONNECT,
-      (nrf_gpio_pin_pull_t)NRFX_SPIMX_MISO_PULL_CFG,
-      NRF_GPIO_PIN_H0H1,
+      NRFX_SPIMX_MISO_PULL_CFG,
+      NRFX_SPIMX_PIN_DRIVE_CFG,
       NRF_GPIO_PIN_NOSENSE);
   }
   
@@ -281,7 +281,7 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
     NRF_GPIO_PIN_DIR_OUTPUT,
     NRF_GPIO_PIN_INPUT_DISCONNECT,
     NRF_GPIO_PIN_NOPULL,
-    NRF_GPIO_PIN_H0H1,
+    NRFX_SPIMX_PIN_DRIVE_CFG,
     NRF_GPIO_PIN_NOSENSE);
 
   // Set SPIM registers and enable
