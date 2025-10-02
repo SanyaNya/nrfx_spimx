@@ -171,7 +171,9 @@ __STATIC_INLINE void change_momi_state(NRF_SPIM_Type* p_spim,
 {
   if(p_cb->momi_state != momi_state)
   {
+  #if !NRFX_SPIMX_UNSAFE_3WIRE_RECONFIGURE_ONLINE
     nrf_spim_disable(p_spim);
+  #endif
 
     if(momi_state == MOMI_STATE_OUTPUT)
     {
@@ -188,7 +190,9 @@ __STATIC_INLINE void change_momi_state(NRF_SPIM_Type* p_spim,
 
     p_cb->momi_state = momi_state;
 
+  #if !NRFX_SPIMX_UNSAFE_3WIRE_RECONFIGURE_ONLINE
     nrf_spim_enable(p_spim);
+  #endif
   }
 }
 

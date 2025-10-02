@@ -38,6 +38,13 @@
 #define NRFX_SPIMX_EXTENDED_ENABLED 0
 #endif
 
+// <q> NRFX_SPIMX_UNSAFE_3WIRE_RECONFIGURE_ONLINE  - do not disable spim during 3-wire reconfiguration to input/output
+
+
+#ifndef NRFX_SPIMX_UNSAFE_3WIRE_RECONFIGURE_ONLINE
+#define NRFX_SPIMX_UNSAFE_3WIRE_RECONFIGURE_ONLINE 0
+#endif
+
 // <o> NRFX_SPIMX_MISO_PULL_CFG  - MISO pin pull configuration.
  
 // <0=> NRF_GPIO_PIN_NOPULL 
