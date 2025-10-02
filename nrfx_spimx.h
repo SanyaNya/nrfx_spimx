@@ -58,16 +58,20 @@ nrfx_spimx_inst_idx_t;
  */
 #define NRFX_SPIMX_PIN_NOT_USED  0xFF
 
+/** @brief Slave select pin number and polarity. */
+typedef struct
+{
+  uint8_t pin;         ///< Slave Select pin number.
+  bool    active_high; ///< Polarity of the Slave Select pin during transmission.
+}
+nrfx_spimx_ss_pin_t;
+
 /** @brief Configuration structure of the SPIMX driver instance. */
 typedef struct
 {
   uint8_t sck_pin;        ///< SCK pin number.
   uint8_t mosi_pin;       ///< MOSI pin number.
   uint8_t miso_pin;       ///< MISO pin number.
-  uint8_t ss_pin;         ///< Slave Select pin number (optional).
-                          /**< Set to @ref NRFX_SPIM_PIN_NOT_USED
-                           *   if this signal is not needed. */
-  bool    ss_active_high; ///< Polarity of the Slave Select pin during transmission.
   uint8_t irq_priority;   ///< Interrupt priority.
   uint8_t orc;            ///< Overrun character.
                           /**< This character is used when all bytes from the TX buffer are sent,
@@ -76,6 +80,9 @@ typedef struct
   nrf_spim_frequency_t frequency; ///< SPIMX frequency.
   nrf_spim_mode_t      mode;      ///< SPIMX mode.
   nrf_spim_bit_order_t bit_order; ///< SPIMX bit order.
+
+  nrfx_spimx_ss_pin_t ss_pins[NRFX_SPIMX_MAX_SLAVES_COUNT];
+  uint8_t slaves_count;
 }
 nrfx_spimx_config_t;
 
@@ -154,7 +161,7 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
 
 void nrfx_spimx_uninit(const nrfx_spimx_t* const p_instance);
 
-void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer_desc_t* p_xfer_desc);
+void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer_desc_t* p_xfer_desc, uint8_t slave_idx);
 
 void nrfx_spimx_abort(const nrfx_spimx_t* p_instance);
 

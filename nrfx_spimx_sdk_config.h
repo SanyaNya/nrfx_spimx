@@ -31,6 +31,12 @@
 #define NRFX_SPIMX3_ENABLED 0
 #endif
 
+// <i> NRFX_SPIMX_MAX_SLAVES_COUNT  - maximum number of slaves
+
+#ifndef NRFX_SPIMX_MAX_SLAVES_COUNT
+#define NRFX_SPIMX_MAX_SLAVES_COUNT 1
+#endif
+
 // <q> NRFX_SPIMX_EXTENDED_ENABLED  - Enable extended SPIMX features
  
 

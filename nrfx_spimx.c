@@ -69,20 +69,28 @@ do                                                                              
 {                                                                                                             \
   NRFX_ASSERT(p_conf);                                                                                        \
   NRFX_ASSERT(p_conf->sck_pin  != NRFX_SPIMX_PIN_NOT_USED);                                                   \
-  NRFX_ASSERT(p_conf->ss_pin   != NRFX_SPIMX_PIN_NOT_USED);                                                   \
   NRFX_ASSERT(!(p_conf->mosi_pin == NRFX_SPIMX_PIN_NOT_USED && p_conf->miso_pin == NRFX_SPIMX_PIN_NOT_USED)); \
   NRFX_ASSERT(                                                                                                \
     p_conf->sck_pin != p_conf->mosi_pin  &&                                                                   \
     p_conf->sck_pin != p_conf->miso_pin  &&                                                                   \
-    p_conf->sck_pin != p_conf->ss_pin    &&                                                                   \
-    p_conf->mosi_pin != p_conf->miso_pin &&                                                                   \
-    p_conf->mosi_pin != p_conf->ss_pin   &&                                                                   \
-    p_conf->miso_pin != p_conf->ss_pin);                                                                      \
+    p_conf->mosi_pin != p_conf->miso_pin);                                                                    \
   NRFX_ASSERT(p_conf->irq_priority <= 7);                                                                     \
   NRFX_ASSERT(p_conf->mode <= NRF_SPIM_MODE_3);                                                               \
   NRFX_ASSERT(                                                                                                \
     p_conf->bit_order == NRF_SPIM_BIT_ORDER_MSB_FIRST ||                                                      \
     p_conf->bit_order == NRF_SPIM_BIT_ORDER_LSB_FIRST);                                                       \
+  NRFX_ASSERT(p_conf->slaves_count > 0 && p_conf->slaves_count <= NRFX_SPIMX_MAX_SLAVES_COUNT);               \
+  bool ss_not_unique[256] = {};                                                                               \
+  for(uint8_t i = 0; i != p_conf->slaves_count; ++i)                                                          \
+  {                                                                                                           \
+    NRFX_ASSERT(p_conf->ss_pins[i].pin != NRFX_SPIMX_PIN_NOT_USED);                                           \
+    NRFX_ASSERT(                                                                                              \
+      p_conf->ss_pins[i].pin != p_conf->sck_pin  &&                                                           \
+      p_conf->ss_pins[i].pin != p_conf->mosi_pin &&                                                           \
+      p_conf->ss_pins[i].pin != p_conf->miso_pin);                                                            \
+    NRFX_ASSERT(!ss_not_unique[p_conf->ss_pins[i].pin]);                                                      \
+    ss_not_unique[p_conf->ss_pins[i].pin] = true;                                                             \
+  }                                                                                                           \
 }while(0)
 
 #define ASSERT_XFER_DESC(p_xfer_desc)                                                                           \
@@ -121,12 +129,14 @@ typedef struct
   nrfx_drv_state_t             state;
   bool                         is_3wire;
   volatile spi_transfer_type_t transfer_in_progress;
+  volatile uint8_t             current_slave_idx;
 
   volatile momi_state_t momi_state;
   uint8_t momi_pin;
-  uint8_t ss_pin;
-  bool    ss_active_high;
   uint8_t orc;
+
+  nrfx_spimx_ss_pin_t ss_pins[NRFX_SPIMX_MAX_SLAVES_COUNT];
+  uint8_t slaves_count;
 }
 spimx_control_block_t;
 
@@ -208,14 +218,14 @@ __STATIC_INLINE void set_pin_active(uint8_t pin, bool active_high)
   else nrf_gpio_pin_clear(pin);
 }
 
-__STATIC_INLINE void set_ss_active(const spimx_control_block_t* p_cb)
+__STATIC_INLINE void set_ss_active(const spimx_control_block_t* p_cb, uint8_t idx)
 {
-  set_pin_active(p_cb->ss_pin, p_cb->ss_active_high);
+  set_pin_active(p_cb->ss_pins[idx].pin, p_cb->ss_pins[idx].active_high);
 }
 
-__STATIC_INLINE void set_ss_non_active(const spimx_control_block_t* p_cb)
+__STATIC_INLINE void set_ss_non_active(const spimx_control_block_t* p_cb, uint8_t idx)
 {
-  set_pin_non_active(p_cb->ss_pin, p_cb->ss_active_high);
+  set_pin_non_active(p_cb->ss_pins[idx].pin, p_cb->ss_pins[idx].active_high);
 }
 
 __STATIC_INLINE spi_transfer_type_t transfer_type(const nrfx_spimx_xfer_desc_t* xfer_desc)
@@ -279,14 +289,17 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
       NRF_GPIO_PIN_NOSENSE);
   }
   
-  // Configure SS pin
-  set_pin_non_active(p_conf->ss_pin, p_conf->ss_active_high);
-  nrf_gpio_cfg(p_conf->ss_pin,
-    NRF_GPIO_PIN_DIR_OUTPUT,
-    NRF_GPIO_PIN_INPUT_DISCONNECT,
-    NRF_GPIO_PIN_NOPULL,
-    NRFX_SPIMX_PIN_DRIVE_CFG,
-    NRF_GPIO_PIN_NOSENSE);
+  // Configure SS pins
+  for(uint8_t i = 0; i != p_conf->slaves_count; ++i)
+  {
+    set_pin_non_active(p_conf->ss_pins[i].pin, p_conf->ss_pins[i].active_high);
+    nrf_gpio_cfg(p_conf->ss_pins[i].pin,
+      NRF_GPIO_PIN_DIR_OUTPUT,
+      NRF_GPIO_PIN_INPUT_DISCONNECT,
+      NRF_GPIO_PIN_NOPULL,
+      NRFX_SPIMX_PIN_DRIVE_CFG,
+      NRF_GPIO_PIN_NOSENSE);
+  }
 
   // Set SPIM registers and enable
   nrf_spim_pins_set(p_spim, p_conf->sck_pin, spim_pin(p_conf->mosi_pin), spim_pin(p_conf->miso_pin));
@@ -310,11 +323,12 @@ void nrfx_spimx_init(const nrfx_spimx_t* const  p_instance,
   p_cb->state = NRFX_DRV_STATE_INITIALIZED;
   p_cb->is_3wire = p_conf->mosi_pin == NRFX_SPIMX_PIN_NOT_USED || p_conf->miso_pin == NRFX_SPIMX_PIN_NOT_USED;
   p_cb->transfer_in_progress = SPI_TRANSFER_TYPE_NONE;
+  p_cb->current_slave_idx = 0;
   p_cb->momi_state = p_conf->mosi_pin != NRFX_SPIMX_PIN_NOT_USED ? MOMI_STATE_OUTPUT : MOMI_STATE_INPUT;
   p_cb->momi_pin = p_conf->mosi_pin != NRFX_SPIMX_PIN_NOT_USED ? p_conf->mosi_pin : p_conf->miso_pin;
-  p_cb->ss_pin = p_conf->ss_pin;
-  p_cb->ss_active_high = p_conf->ss_active_high;
   p_cb->orc = p_conf->orc;
+  memcpy(p_cb->ss_pins, p_conf->ss_pins, p_conf->slaves_count * sizeof(nrfx_spimx_ss_pin_t));
+  p_cb->slaves_count = p_conf->slaves_count;
 }
 
 void nrfx_spimx_uninit(const nrfx_spimx_t* const p_instance)
@@ -354,7 +368,7 @@ __STATIC_INLINE void spim_xfer(NRF_SPIM_Type* p_spim, const nrfx_spimx_xfer_desc
   nrf_spim_task_trigger(p_spim, NRF_SPIM_TASK_START);
 }
 
-void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer_desc_t* p_xfer_desc)
+void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer_desc_t* p_xfer_desc, uint8_t slave_idx)
 {
   ASSERT_SPIM_INSTANCE(p_instance);
   ASSERT_XFER_DESC(p_xfer_desc);
@@ -363,10 +377,12 @@ void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer
   spimx_control_block_t* p_cb = &g_spimx_cb[p_instance->drv_inst_idx];
   NRFX_ASSERT(p_cb->state == NRFX_DRV_STATE_INITIALIZED);
   NRFX_ASSERT(p_cb->transfer_in_progress == SPI_TRANSFER_TYPE_NONE);
+  NRFX_ASSERT(slave_idx < p_cb->slaves_count);
   
   spi_transfer_type_t type = transfer_type(p_xfer_desc);
 
   p_cb->transfer_in_progress = type;
+  p_cb->current_slave_idx = slave_idx;
   p_cb->evt.xfer_desc = *p_xfer_desc;
 
   nrfx_spimx_xfer_desc_t internal_xfer_desc;
@@ -388,7 +404,7 @@ void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer
   else
     internal_xfer_desc = *p_xfer_desc;
   
-  set_ss_active(p_cb);
+  set_ss_active(p_cb, slave_idx);
 
   spim_xfer(p_spim, &internal_xfer_desc);
 
@@ -409,7 +425,7 @@ void nrfx_spimx_xfer(const nrfx_spimx_t* const p_instance, const nrfx_spimx_xfer
     }
 
     // Finish xfer
-    set_ss_non_active(p_cb);
+    set_ss_non_active(p_cb, slave_idx);
     p_cb->transfer_in_progress = SPI_TRANSFER_TYPE_NONE;
   }
 }
@@ -451,7 +467,7 @@ static void irq_handler(NRF_SPIM_Type* p_spim, spimx_control_block_t* p_cb)
     // Finish xfer
     else
     {
-      set_ss_non_active(p_cb);
+      set_ss_non_active(p_cb, p_cb->current_slave_idx);
 
       p_cb->transfer_in_progress = SPI_TRANSFER_TYPE_NONE;
       p_cb->evt.type = NRFX_SPIMX_EVENT_DONE;
