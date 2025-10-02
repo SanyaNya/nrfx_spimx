@@ -4,6 +4,7 @@ Reimplementation of nrf5-sdk nrfx_spim with extra features.
 
 ## Features:
  * SPI 3-wire support
+ * Pins driver configuration
 
 ## TODO:
  * anomalies fix
